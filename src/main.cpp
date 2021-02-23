@@ -14,7 +14,7 @@
 
 void readRow(char*, int);
 int* readColumn();
-void allOff();
+void resetAllColumns();
 
 // Allow for switching between pullup/floating
 int triggerColumnState = LOW;
@@ -45,7 +45,7 @@ void setup() {
   pinMode(ROW3R, pullupToggle);
 
 
-  allOff();
+  resetAllColumns();
 
   Serial.println("Startup Complete");
 }
@@ -72,7 +72,7 @@ void loop() {
     status[r][offset] = switches[switchInc++];
     status[r][offset+1] = switches[switchInc++];
   }
-  allOff();
+  resetAllColumns();
 
 
   // Column 2
@@ -84,7 +84,7 @@ void loop() {
     status[r][offset] = switches[switchInc++];
     status[r][offset+1] = switches[switchInc++];
   }
-  allOff();
+  resetAllColumns();
 
 
   // Column 3
@@ -96,7 +96,7 @@ void loop() {
     status[r][offset] = switches[switchInc++];
     status[r][offset+1] = switches[switchInc++];
   }
-  allOff();
+  resetAllColumns();
 
 
   // Column 4
@@ -108,13 +108,8 @@ void loop() {
     status[r][offset] = switches[switchInc++];
     status[r][offset+1] = switches[switchInc++];
   }
-  allOff();
+  resetAllColumns();
 
-
-
-
-  // readRow("2L", ROW2L);
-  // delay(100);
 
 
   // Clear screen and display the current status Array
@@ -132,11 +127,9 @@ void loop() {
   }
   Serial.println("-------------------------");
 
-  // delay(500);
-
 }
 
-void allOff(){
+void resetAllColumns(){
   digitalWrite(COLUMN1, unusedColumnState);
   digitalWrite(COLUMN2, unusedColumnState);
   digitalWrite(COLUMN3, unusedColumnState);
