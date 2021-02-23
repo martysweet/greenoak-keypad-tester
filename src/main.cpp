@@ -12,16 +12,24 @@
 #define ROW1R A4
 #define ROW1L A5
 
-void readRow(char*, int);
+void doReadColumn(int offset);
 int* readColumn();
 void resetAllColumns();
+int* readColumnRows();
 
 // Allow for switching between pullup/floating
-int triggerColumnState = LOW;
-int unusedColumnState = HIGH;
-int pressedState = LOW;
+int triggerColumnState = LOW; // LOW = everything is high unless evaluating | HIGH = everything is LOW/floating unless evaluating
+int status[3][8] = {0}; // Row 0, 1, 2, // Column 0-7
+int* switches;
 
-
+/**
+ * Setup the columns as outputs, we set these to HIGH or LOW
+ * Setup the rows as inputs, we read the value of these.
+ * 
+ * The best operation mode is when all outputs by default are HIGH and inputs use the INPUT_PULLUP.
+ * When evaluating, the column is set LOW. This results in the input pin going LOW when read. 
+ * This avoids transient/floating voltages.
+ */
 void setup() {
   Serial.begin(115200);
 
@@ -44,80 +52,46 @@ void setup() {
   pinMode(ROW3L, pullupToggle);
   pinMode(ROW3R, pullupToggle);
 
-
   resetAllColumns();
-
   Serial.println("Startup Complete");
 }
 
 
-
-int count = 0;
-int status[3][8] = {0}; // Row 0, 1, 2, // Column 0-7
-int* switches;
-
+/**
+ * Main loop
+ * Reads each column and the switches of them into status array
+ * When a column is in a trigger state, we can read all the rows and thus infer if the button is pressed for that column
+ * We do this for each column, evaluating all the buttons.
+ * Clears the terminal and Displays the status
+ **/
 void loop() {
-  count++;
-
-
-  int offset = 0;
-  int switchInc = 0;
 
   // Column 1
-  digitalWrite(COLUMN1, triggerColumnState);
-  switches = readColumn();
-  offset = 0;
-  switchInc = 0;
-  for(int r = 0; r<3; r++){
-    status[r][offset] = switches[switchInc++];
-    status[r][offset+1] = switches[switchInc++];
-  }
-  resetAllColumns();
-
+  digitalWrite(COLUMN1, triggerColumnState);    // Set the Column typically low
+  doReadColumn(0);                              // 0 specifies the row offset to put this column into the status array
+  resetAllColumns();                            // Reset all columns
 
   // Column 2
   digitalWrite(COLUMN2, triggerColumnState);
-  switches = readColumn();
-  offset = 2;
-  switchInc = 0;
-  for(int r = 0; r<3; r++){
-    status[r][offset] = switches[switchInc++];
-    status[r][offset+1] = switches[switchInc++];
-  }
+  doReadColumn(2);
   resetAllColumns();
-
 
   // Column 3
   digitalWrite(COLUMN3, triggerColumnState);
-  switches = readColumn();
-  offset = 4;
-  switchInc = 0;
-  for(int r = 0; r<3; r++){
-    status[r][offset] = switches[switchInc++];
-    status[r][offset+1] = switches[switchInc++];
-  }
+  doReadColumn(4);
   resetAllColumns();
-
 
   // Column 4
   digitalWrite(COLUMN4, triggerColumnState);
-  switches = readColumn();
-  offset = 6;
-  switchInc = 0;
-  for(int r = 0; r<3; r++){
-    status[r][offset] = switches[switchInc++];
-    status[r][offset+1] = switches[switchInc++];
-  }
+  doReadColumn(6);
   resetAllColumns();
-
-
 
   // Clear screen and display the current status Array
   // Use minicom for this functionality: minicom -b115200 -D /dev/ttyACM0
   Serial.println("\033[0H\033[0J-------------------------");
   for(int r=0; r<3; r++){
     for(int c=0; c<8; c++){
-      if(status[r][c] == LOW){
+      if(status[r][c] == triggerColumnState){ // The pin is the same as the relevant Column output
         Serial.print(" X ");
       }else{
         Serial.print(" O ");
@@ -129,31 +103,41 @@ void loop() {
 
 }
 
+/**
+ * Reads the column, putting six switches into the status array
+ **/
+void doReadColumn(int offset){
+  switches = readColumnRows();
+  int switchInc = 0;
+  for(int r = 0; r<3; r++){
+    status[r][offset] = switches[switchInc++];
+    status[r][offset+1] = switches[switchInc++];
+  }
+}
+
+/**
+ * Resets all the column power feeds
+ **/
 void resetAllColumns(){
-  digitalWrite(COLUMN1, unusedColumnState);
-  digitalWrite(COLUMN2, unusedColumnState);
-  digitalWrite(COLUMN3, unusedColumnState);
-  digitalWrite(COLUMN4, unusedColumnState);
+  digitalWrite(COLUMN1, !triggerColumnState);
+  digitalWrite(COLUMN2, !triggerColumnState);
+  digitalWrite(COLUMN3, !triggerColumnState);
+  digitalWrite(COLUMN4, !triggerColumnState);
   delay(10);
 }
 
-int* readColumn(){
-    delay(10);
-    static int resp[6];                    // For the selected Column
-    resp[0] = digitalRead(ROW1L);   // 0 1
-    resp[1] = digitalRead(ROW1R);   // 2 3
-    resp[2] = digitalRead(ROW2L);   // 4 5
-    resp[3] = digitalRead(ROW2R);
-    resp[4] = digitalRead(ROW3L);
-    resp[5] = digitalRead(ROW3R);
-    return resp;
-}
-
-void readPin(char *s, int pinn){
-  int reading = digitalRead(pinn);
-  if(reading == HIGH){
-    Serial.print(count);
-    Serial.print(" ON ");
-    Serial.println(s);
-  }
+/**
+ * Reads all the rows for the specifically powered column.
+ * returning an array of LOW | HIGH
+ **/
+int* readColumnRows(){
+  delay(10);
+  static int resp[6];             // For the selected Column
+  resp[0] = digitalRead(ROW1L);   // 0 1
+  resp[1] = digitalRead(ROW1R);   // 2 3
+  resp[2] = digitalRead(ROW2L);   // 4 5
+  resp[3] = digitalRead(ROW2R);
+  resp[4] = digitalRead(ROW3L);
+  resp[5] = digitalRead(ROW3R);
+  return resp;
 }
