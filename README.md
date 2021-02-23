@@ -3,6 +3,7 @@ Keypad Tester for Greenoak 9700, using an Ardiuno MEGA2560
 
 - Use VSCode with the PlatformIO Extension
 - Supports HIGH/LOW modes, typically for stable operation you want to have the row inputs pulled high, with the columns high, then for each scan, put a column low and evaluate the rows for a LOW signal.
+- Use minicom for clear screen functionality: minicom -b115200 -D /dev/ttyACM0
 
 ![Matrix Wiring](https://user-images.githubusercontent.com/20517404/108894459-35d78780-760a-11eb-9be8-b51454a9ef18.png)
 
